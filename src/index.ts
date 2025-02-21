@@ -1,24 +1,19 @@
 import express, { NextFunction, Request, Response } from 'express';
 import { config } from "dotenv";
+import UploadDataRouter from './routes/UploadDataRoute';
+import { CustomResponse } from './constants/types';
 
-// static manipulations
 config();
-interface CustomResponse extends Response<{ message: string, [key: string]: any }> { }
-// end of static manipulation
-
-
 const port = process.env.PORT || 3000
-
 const app = express();
 
-app.post('/upload', async (req: Request, res: CustomResponse): Promise<void> => {
-    res.status(200).json({ message: "Hello" });
-    return
-})
+// controllers
+app.use('/upload', UploadDataRouter)
 
 app.use(async (error: Error, req: Request, res: CustomResponse, next: NextFunction): Promise<void> => {
     if (error) {
-        res.status(500).json({ message: "Server Error", error });
+        console.error("Error thrown from server error handler: ", error);
+        res.status(400).json({ message: "Server handler error", error: error.message });
         return;
     }
 
