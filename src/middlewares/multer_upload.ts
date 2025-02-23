@@ -13,6 +13,12 @@ export const upload = multer({
             return cb(new Error('Only DOCX, JSON, TXT, and PDF files are allowed'));
         }
         cb(null, true);
-    }
+    },
+    storage: multer.diskStorage({
+        destination: './uploads',
+        filename: function (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
+            cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+        }
+    })
 })
 // end of multer configuration

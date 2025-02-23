@@ -6,6 +6,7 @@ import { CustomResponse } from './constants/types';
 config();
 const port = process.env.PORT || 3000
 const app = express();
+app.use(express.json());
 
 // controllers
 app.use('/upload', UploadDataRouter)
