@@ -1,9 +1,12 @@
 import { FeatureExtractionOutput, HfInference } from '@huggingface/inference';
+import { config } from "dotenv";
+
+config();
 
 export class DataIngestion {
     private static hf: HfInference | null = null
     private static model: string = "sentence-transformers/distilbert-base-nli-mean-tokens"
-    private static accessToken: string = process.env.HUGGINGFACE_ACCESS_TOKEN as string
+    private static accessToken: string = process.env.HF_API_KEY as string
 
     static getInstance(): HfInference {
         if (this.hf === null) {
