@@ -4,7 +4,7 @@ import { CustomResponse } from "../constants/types";
 import { checkIfFilePresent } from "../middlewares/checkIfFilePresent";
 import { DataIngestion } from "../helpers/DataIngestion";
 import { getSentencesArrayFromFile } from "../helpers/functions";
-import { FeatureExtractionOutput } from "@huggingface/inference";
+import WeaviateDB from "../helpers/Weaviatedb";
 
 const UploadDataRouter = Router({
     caseSensitive: true,
@@ -25,7 +25,7 @@ UploadDataRouter.post('/ingest_data', checkIfFilePresent, async (req: Request, r
 
     const fileDetails = req.file;
     let fileSentences: string[] = [];
-    let embeddings: FeatureExtractionOutput | null = null;
+    let textEmbeddingsObject: { text: string, embedding: number | number[] | number[][] }[] | null = null;
 
     if (fileDetails?.path) {
         fileSentences = await getSentencesArrayFromFile(fileDetails?.path, fileDetails?.originalname);
@@ -34,11 +34,32 @@ UploadDataRouter.post('/ingest_data', checkIfFilePresent, async (req: Request, r
     }
 
     if (fileSentences.length > 0) {
-        embeddings = await DataIngestion.getEmbeddingsFromTextArray(fileSentences);
+        textEmbeddingsObject = await DataIngestion.getEmbeddingsFromTextArray(fileSentences);
     }
 
-    res.status(200).json({ message: "File ingestion successful", embeddings });
+    res.status(200).json({ message: "File ingestion successful", embeddings: textEmbeddingsObject });
     return
 });
+
+UploadDataRouter.post('/store_data', async (req: Request, res: CustomResponse): Promise<void> => {
+
+    if (!req.body.embeddings || !req.body.collectionName) {
+        res.status(400).json({ message: "Error: expected embeddings data, text aray and collection name to be passed in body" });
+        return;
+    }
+
+    const receivedEmbeddings: { text: string, embedding: number[] }[] = req.body.embeddings
+
+    if (!(await WeaviateDB.checkIfCollectionExists(req.body.collectionName))) {
+        await WeaviateDB.createCollection(req.body.collectionName);
+    }
+
+    const result = await WeaviateDB.insertManyObjects(req.body.collectionName, receivedEmbeddings.map(item => ({
+        text: item.text,
+        vector: item.embedding
+    })))
+
+    res.status(200).json({ message: "Embeddings storing successful", outcome: result });
+})
 
 export default UploadDataRouter;

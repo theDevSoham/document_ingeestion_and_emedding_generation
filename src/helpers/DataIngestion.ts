@@ -17,7 +17,7 @@ export class DataIngestion {
         return hfInferenceInstance
     }
 
-    static async getEmbeddingsFromTextArray(text: string[]): Promise<FeatureExtractionOutput> {
+    static async getEmbeddingsFromTextArray(text: string[]): Promise<{ text: string, embedding: number | number[] | number[][] }[]> {
         const instance = this.getInstance();
 
         const embeddings = await instance.featureExtraction({
@@ -25,6 +25,15 @@ export class DataIngestion {
             inputs: text,
         })
 
-        return embeddings;
+        const resultObject: { text: string, embedding: number | number[] | number[][] }[] = []
+
+        embeddings.forEach((embedding, index) => {
+            resultObject.push({
+                text: text[index],
+                embedding,
+            })
+        })
+
+        return resultObject;
     }
 }
