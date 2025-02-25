@@ -1,5 +1,6 @@
 import weaviate, { BatchObjectsReturn, Collection, WeaviateClient } from 'weaviate-client';
 import { config } from "dotenv";
+import { WeaviateTextEmbeddingObject } from '../types/general_types';
 
 config();
 
@@ -21,14 +22,18 @@ export default class WeaviateDB {
         return this.instance;
     }
 
-    static async createCollection(collectionName: string): Promise<Collection<undefined, string>> {
+    static async createCollection(collectionName: string): Promise<Collection<undefined, string> | null> {
         const client = await this.getClientInstance();
 
-        const newCollection = await client?.collections.create({
-            name: collectionName,
-        })
+        try {
+            const newCollection = await client?.collections.create({
+                name: collectionName,
+            })
 
-        return newCollection;
+            return newCollection;
+        } catch (e) {
+            throw new Error("Error: Cannot create collection. Please enter a valid name");
+        }
     }
 
     static async checkIfCollectionExists(collectionName: string): Promise<boolean> {
@@ -59,7 +64,7 @@ export default class WeaviateDB {
         }
     }
 
-    static async insertManyObjects(collectionName: string, data: { text: string, vector: number[] }[]): Promise<BatchObjectsReturn<undefined> | null> {
+    static async insertManyObjects(collectionName: string, data: WeaviateTextEmbeddingObject[]): Promise<BatchObjectsReturn<undefined> | null> {
         try {
             const client = await this.getClientInstance();
 

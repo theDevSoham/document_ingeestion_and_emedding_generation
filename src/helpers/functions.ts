@@ -48,7 +48,6 @@ export const getSentencesArrayFromFile = async (filePath: string, originalName: 
     }
 
     await fs.promises.unlink(filePath);
-    console.log("Raw text: ", rawText);
 
     return splitIntoSentences(rawText);
 }

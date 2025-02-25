@@ -1,10 +1,10 @@
 import { Request, Router } from "express";
 import { upload } from "../middlewares/multer_upload";
 import { CustomResponse } from "../constants/types";
-import { checkIfFilePresent } from "../middlewares/checkIfFilePresent";
 import { DataIngestion } from "../helpers/DataIngestion";
 import { getSentencesArrayFromFile } from "../helpers/functions";
 import WeaviateDB from "../helpers/Weaviatedb";
+import { TextEmbeddingObject } from "../types/general_types";
 
 const UploadDataRouter = Router({
     caseSensitive: true,
@@ -12,54 +12,61 @@ const UploadDataRouter = Router({
 
 UploadDataRouter.post('/upload_file', upload.single('unstructuredFile'), async (req: Request, res: CustomResponse): Promise<void> => {
 
+    // upload file
     if (!req.file) {
         res.status(400).json({ message: "Please enter a file of required format" });
         return
     }
 
-    res.status(200).json({ message: "File upload successful", fileDetails: req.file });
-    return
-});
+    if (!req.body.collection_name) {
+        res.status(400).json({ message: "Please enter a valid collection name" });
+        return
+    }
 
-UploadDataRouter.post('/ingest_data', checkIfFilePresent, async (req: Request, res: CustomResponse): Promise<void> => {
-
+    // break file into sentences and get embeddings from file
     const fileDetails = req.file;
+
     let fileSentences: string[] = [];
-    let textEmbeddingsObject: { text: string, embedding: number | number[] | number[][] }[] | null = null;
+    let textEmbeddingsObject: TextEmbeddingObject[] | null = null;
 
     if (fileDetails?.path) {
         fileSentences = await getSentencesArrayFromFile(fileDetails?.path, fileDetails?.originalname);
     } else {
         res.status(400).json({ message: "Error: Path not found for file. Please re upload again" });
+        return;
     }
 
     if (fileSentences.length > 0) {
         textEmbeddingsObject = await DataIngestion.getEmbeddingsFromTextArray(fileSentences);
     }
 
-    res.status(200).json({ message: "File ingestion successful", embeddings: textEmbeddingsObject });
-    return
-});
-
-UploadDataRouter.post('/store_data', async (req: Request, res: CustomResponse): Promise<void> => {
-
-    if (!req.body.embeddings || !req.body.collectionName) {
-        res.status(400).json({ message: "Error: expected embeddings data, text aray and collection name to be passed in body" });
+    // upload embeddings and text to weaviate db
+    if (!textEmbeddingsObject) {
+        res.status(500).json({ message: "Error: Text embedding object error" });
         return;
     }
 
-    const receivedEmbeddings: { text: string, embedding: number[] }[] = req.body.embeddings
+    const receivedEmbeddings: TextEmbeddingObject[] = textEmbeddingsObject
 
-    if (!(await WeaviateDB.checkIfCollectionExists(req.body.collectionName))) {
-        await WeaviateDB.createCollection(req.body.collectionName);
+    try {
+        if (!(await WeaviateDB.checkIfCollectionExists(req.body.collection_name))) {
+
+            await WeaviateDB.createCollection(req.body.collection_name);
+
+        }
+
+        const result = await WeaviateDB.insertManyObjects(req.body.collection_name, receivedEmbeddings.map(item => ({
+            text: item.text,
+            vector: item.embedding
+        })))
+
+        res.status(200).json({ message: "Embeddings storing successful", outcome: result });
+        return
+    } catch (e) {
+        console.log("Error on weaviate instance: ", e)
+        res.status(400).json({ message: "Error", error: "Error creating collection" });
+        return;
     }
-
-    const result = await WeaviateDB.insertManyObjects(req.body.collectionName, receivedEmbeddings.map(item => ({
-        text: item.text,
-        vector: item.embedding
-    })))
-
-    res.status(200).json({ message: "Embeddings storing successful", outcome: result });
-})
+});
 
 export default UploadDataRouter;
