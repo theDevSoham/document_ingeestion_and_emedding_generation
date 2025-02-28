@@ -142,13 +142,16 @@ export class TextIngestionPipeline {
         await WeaviateDB.createCollection(this.collectionName);
       }
 
-      const result = await WeaviateDB.insertObject(this.collectionName, {
-        id: uniqueId,
-        chunks: this.textEmbeddingsObject.map((v) => ({
-          text: v.text,
-          vector: v.embedding as number[],
-        })),
-      });
+      const result = await WeaviateDB.insertOrUpdateObject(
+        this.collectionName,
+        {
+          id: uniqueId,
+          chunks: this.textEmbeddingsObject.map((v) => ({
+            text: v.text,
+            vector: v.embedding as number[],
+          })),
+        }
+      );
 
       return { id: uniqueId, result };
     } catch (e) {
@@ -162,5 +165,28 @@ export class TextIngestionPipeline {
    *
    * @performs data update with change in data
    */
-  async updateEntry(documentId: string) {}
+  async updateEntry(documentId: string) {
+    const uniqueId = documentId;
+    try {
+      if (!(await WeaviateDB.checkIfCollectionExists(this.collectionName))) {
+        throw new Error("Collection doesn't exist");
+      }
+
+      const result = await WeaviateDB.insertOrUpdateObject(
+        this.collectionName,
+        {
+          id: uniqueId,
+          chunks: this.textEmbeddingsObject.map((v) => ({
+            text: v.text,
+            vector: v.embedding as number[],
+          })),
+        }
+      );
+
+      return { id: uniqueId, result };
+    } catch (e) {
+      console.log("Error on weaviate instance: ", e);
+      throw new Error("Error: " + e);
+    }
+  }
 }

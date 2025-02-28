@@ -52,7 +52,7 @@ export default class WeaviateDB {
     return doesExist;
   }
 
-  static async insertObject(
+  static async insertOrUpdateObject(
     collectionName: string,
     data: { id: string; chunks: { text: string; vector: number[] }[] }
   ): Promise<string | null> {
@@ -73,6 +73,18 @@ export default class WeaviateDB {
         representativeVector = representativeVector.map(
           (v) => v / data.chunks.length
         );
+      }
+
+      if (await collection.data.exists(data.id)) {
+        await collection.data.update({
+          id: data.id, // Single document id
+          properties: {
+            chunks: data.chunks, // Array of chunks (each with text and vector)
+          },
+          vectors: representativeVector, // Representative vector for indexing
+        });
+
+        return data.id;
       }
 
       const result = await collection.data.insert({
@@ -118,11 +130,11 @@ export default class WeaviateDB {
   //     }
   //   }
 
-  static async getExistingData(collectionName: string, uniqueId: string) {
+  static async getExistingData(collectionName: string, documentId: string) {
     try {
       const client = await this.getClientInstance();
       const collection = client.collections.get(collectionName);
-      const data = await collection.query.fetchObjectById(uniqueId, {
+      const data = await collection.query.fetchObjectById(documentId, {
         includeVector: true,
       });
 
