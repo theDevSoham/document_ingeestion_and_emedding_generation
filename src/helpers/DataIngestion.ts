@@ -1,39 +1,45 @@
-import { FeatureExtractionOutput, HfInference } from '@huggingface/inference';
+import { HfInference } from "@huggingface/inference";
 import { config } from "dotenv";
 
 config();
 
 export class DataIngestion {
-    private static hf: HfInference | null = null
-    private static model: string = "sentence-transformers/distilbert-base-nli-mean-tokens"
-    private static accessToken: string = process.env.HF_API_KEY as string
+  private static hf: HfInference | null = null;
+  private static model: string =
+    "sentence-transformers/distilbert-base-nli-mean-tokens";
+  private static accessToken: string = process.env.HF_API_KEY as string;
 
-    static getInstance(): HfInference {
-        if (this.hf === null) {
-            this.hf = new HfInference(this.accessToken)
-        }
-
-        const hfInferenceInstance: HfInference = this.hf;
-        return hfInferenceInstance
+  static getInstance(): HfInference {
+    if (this.hf === null) {
+      this.hf = new HfInference(this.accessToken);
     }
 
-    static async getEmbeddingsFromTextArray(text: string[]): Promise<{ text: string, embedding: number | number[] | number[][] }[]> {
-        const instance = this.getInstance();
+    const hfInferenceInstance: HfInference = this.hf;
+    return hfInferenceInstance;
+  }
 
-        const embeddings = await instance.featureExtraction({
-            model: this.model,
-            inputs: text,
-        })
+  static async getEmbeddingsFromTextArray(
+    text: string[]
+  ): Promise<{ text: string; embedding: number | number[] | number[][] }[]> {
+    const instance = this.getInstance();
 
-        const resultObject: { text: string, embedding: number | number[] | number[][] }[] = []
+    const embeddings = await instance.featureExtraction({
+      model: this.model,
+      inputs: text,
+    });
 
-        embeddings.forEach((embedding, index) => {
-            resultObject.push({
-                text: text[index],
-                embedding,
-            })
-        })
+    const resultObject: {
+      text: string;
+      embedding: number | number[] | number[][];
+    }[] = [];
 
-        return resultObject;
-    }
+    embeddings.forEach((embedding, index) => {
+      resultObject.push({
+        text: text[index],
+        embedding,
+      });
+    });
+
+    return resultObject;
+  }
 }

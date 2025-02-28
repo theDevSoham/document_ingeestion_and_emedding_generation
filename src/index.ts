@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express, { NextFunction, Request } from 'express';
 import { config } from "dotenv";
 import UploadDataRouter from './routes/UploadDataRoute';
 import { CustomResponse } from './constants/types';
