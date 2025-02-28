@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json({ limit: '100mb' }));
 
 // controllers
-app.use('/upload', UploadDataRouter)
+app.use('/api', UploadDataRouter)
 
 app.use(async (error: Error, req: Request, res: CustomResponse, next: NextFunction): Promise<void> => {
     if (error) {

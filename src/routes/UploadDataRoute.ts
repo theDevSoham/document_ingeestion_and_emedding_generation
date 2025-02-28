@@ -61,4 +61,28 @@ UploadDataRouter.post(
   }
 );
 
+UploadDataRouter.get(
+  "/get_data_by_id/:id/:collection",
+  async (req: Request, res: CustomResponse): Promise<void> => {
+    if (!req.params.id || !req.params.collection) {
+      res
+        .status(400)
+        .json({ message: "Please provide id and collection name" });
+      return;
+    }
+
+    try {
+      const data = await WeaviateDB.getExistingData(
+        req.params.collection,
+        req.params.id
+      );
+
+      res.status(200).json({ message: "Successfully retrieved data", data });
+    } catch (e) {
+      console.log(e);
+      res.status(500).json({ message: "Error searching data", error: e });
+    }
+  }
+);
+
 export default UploadDataRouter;

@@ -7,6 +7,7 @@ import { TextEmbeddingObject } from "../types/general_types";
 import { DataIngestion } from "./DataIngestion";
 import WeaviateDB from "./Weaviatedb";
 import { BatchObjectsReturn } from "weaviate-client";
+import { v4 as uuidv4 } from "uuid";
 
 export class TextIngestionPipeline {
   private fileDetails: Express.Multer.File;
@@ -131,21 +132,25 @@ export class TextIngestionPipeline {
    *
    * @performs Stores the data
    */
-  async storeEmeddingInVectorDb(): Promise<BatchObjectsReturn<undefined> | null> {
+  async storeEmeddingInVectorDb(): Promise<{
+    id: string;
+    result: string | null;
+  } | null> {
+    const uniqueId = uuidv4();
     try {
       if (!(await WeaviateDB.checkIfCollectionExists(this.collectionName))) {
         await WeaviateDB.createCollection(this.collectionName);
       }
 
-      const result = await WeaviateDB.insertManyObjects(
-        this.collectionName,
-        this.textEmbeddingsObject.map((item) => ({
-          text: item.text,
-          vector: item.embedding,
-        }))
-      );
+      const result = await WeaviateDB.insertObject(this.collectionName, {
+        id: uniqueId,
+        chunks: this.textEmbeddingsObject.map((v) => ({
+          text: v.text,
+          vector: v.embedding as number[],
+        })),
+      });
 
-      return result;
+      return { id: uniqueId, result };
     } catch (e) {
       console.log("Error on weaviate instance: ", e);
       throw new Error("Error: " + e);
