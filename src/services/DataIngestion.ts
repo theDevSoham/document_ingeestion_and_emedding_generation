@@ -18,6 +18,10 @@ export class DataIngestion {
     return hfInferenceInstance;
   }
 
+  /**
+   * @param text
+   * @returns precomputed embedded version of the text
+   */
   static async getEmbeddingsFromTextArray(
     text: string[]
   ): Promise<{ text: string; embedding: number | number[] | number[][] }[]> {

@@ -1,11 +1,11 @@
 import { Request, Router } from "express";
 import { upload } from "../middlewares/multer_upload";
 import { CustomResponse } from "../constants/types";
-import { DataIngestion } from "../helpers/DataIngestion";
+import { DataIngestion } from "../services/DataIngestion";
 // import { getSentencesArrayFromFile } from "../helpers/functions";
-import WeaviateDB from "../helpers/Weaviatedb";
+import WeaviateDB from "../services/Weaviatedb";
 import { TextEmbeddingObject } from "../types/general_types";
-import { TextIngestionPipeline } from "../helpers/TextIngestionPipeline";
+import { TextIngestionPipeline } from "../services/TextIngestionPipeline";
 
 const UploadDataRouter = Router({
   caseSensitive: true,
