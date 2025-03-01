@@ -2,6 +2,7 @@ import weaviate, {
   BatchObjectsReturn,
   Collection,
   WeaviateClient,
+  WeaviateReturn,
 } from "weaviate-client";
 import { config } from "dotenv";
 import { WeaviateTextEmbeddingObject } from "../types/general_types";
@@ -54,7 +55,7 @@ export default class WeaviateDB {
 
   static async insertOrUpdateObject(
     collectionName: string,
-    data: { id: string; chunks: { text: string; vector: number[] }[] }
+    data: { id: string; chunks: WeaviateTextEmbeddingObject[] }
   ): Promise<string | null> {
     try {
       const client = await this.getClientInstance();
@@ -141,6 +142,38 @@ export default class WeaviateDB {
       return data;
     } catch (e) {
       throw new Error(e as string);
+    }
+  }
+
+  static async performNearVectorQuery(
+    collectionName: string,
+    documentId: string,
+    questionEmbedding: WeaviateTextEmbeddingObject
+  ): Promise<WeaviateReturn<undefined> | null> {
+    try {
+      const client = await this.getClientInstance();
+      const collection = client.collections.get(collectionName);
+
+      const result = await collection.query.nearVector(
+        questionEmbedding.vector,
+        {
+          limit: 2,
+          // certainty: 0.7,
+          // distance: 12,
+          // filters: {
+          //   operator: "Equal",
+          //   target: {
+          //     property: "uuid",
+          //   },
+          //   value: documentId,
+          // },
+        }
+      );
+
+      return result;
+    } catch (e) {
+      console.log(e);
+      throw new Error("Problem faced while performing vector query");
     }
   }
 }
