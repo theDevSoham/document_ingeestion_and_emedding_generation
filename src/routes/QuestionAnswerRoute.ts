@@ -7,7 +7,7 @@ const QuestionAnswerRouter = Router({
   caseSensitive: true,
 });
 
-QuestionAnswerRouter.get(
+QuestionAnswerRouter.post(
   "/qna",
   upload.none(),
   async (req: Request, res: CustomResponse): Promise<void> => {
